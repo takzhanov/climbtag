@@ -260,7 +260,7 @@ def run_protocol_analysis(
 
     matcher = ProtocolMatcher(protocol_csv)
     if not matcher.db:
-        raise ProcessingError("protocol CSV is missing or has unsupported columns")
+        raise ProcessingError("protocol file is missing or has unsupported format")
 
     try:
         detector = PersonNumberDetector(model_path)

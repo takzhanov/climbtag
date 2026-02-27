@@ -832,12 +832,12 @@ csvInput.addEventListener("change", function () {
         if (xhr.status === 200) {
             void loadState();
         } else {
-            csvNameDisplay.innerText = "Ошибка загрузки CSV";
+            csvNameDisplay.innerText = "Ошибка загрузки протокола";
             clearCsvBtn.hidden = true;
         }
     };
     xhr.onerror = function () {
-        csvNameDisplay.innerText = "Ошибка загрузки CSV";
+        csvNameDisplay.innerText = "Ошибка загрузки протокола";
         clearCsvBtn.hidden = true;
     };
     xhr.send(formData);

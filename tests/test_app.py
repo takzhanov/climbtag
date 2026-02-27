@@ -29,3 +29,31 @@ def test_upload_rejects_non_video(tmp_path):
 
     assert response.status_code == 400
     assert "error" in response.json()
+
+
+def test_protocol_upload_accepts_txt(tmp_path):
+    protocol = tmp_path / "protocol.txt"
+    protocol.write_text("5;Сидорова Женя\n6;Красова Анна\n", encoding="utf-8")
+
+    with open(protocol, "rb") as f:
+        response = client.post(
+            "/protocol/upload",
+            files={"file": ("protocol.txt", f, "text/plain")}
+        )
+
+    assert response.status_code == 200
+    assert response.json()["filename"].endswith(".txt")
+
+
+def test_protocol_upload_rejects_unsupported_extension(tmp_path):
+    protocol = tmp_path / "protocol.json"
+    protocol.write_text('{"5":"Сидорова Женя"}', encoding="utf-8")
+
+    with open(protocol, "rb") as f:
+        response = client.post(
+            "/protocol/upload",
+            files={"file": ("protocol.json", f, "application/json")}
+        )
+
+    assert response.status_code == 400
+    assert "error" in response.json()

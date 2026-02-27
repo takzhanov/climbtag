@@ -54,6 +54,8 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024
 ACTIVE_PHASES = {"uploading", "downloading", "converting", "processing"}
+WORKER_REQUIRED_PHASES = {"downloading", "converting", "processing"}
+RECONCILE_START_GRACE_SEC = 5.0
 DEFAULT_SETTINGS = {
     "frame_interval_sec": 3,
     "conf_limit": 3,
@@ -202,6 +204,13 @@ def _reconcile_runtime_state() -> dict:
     processing = bool(state.get("processing"))
     worker_active = _worker_active()
     active_phase = phase in ACTIVE_PHASES
+    worker_required_phase = phase in WORKER_REQUIRED_PHASES
+    phase_started_at = state.get("phase_started_at")
+    if isinstance(phase_started_at, (int, float)):
+        elapsed = time.time() - phase_started_at
+    else:
+        elapsed = None
+    in_start_grace = elapsed is not None and 0 <= elapsed < RECONCILE_START_GRACE_SEC
 
     # Clear restored file pointers if files no longer exist after restart.
     video_name = state.get("video")
@@ -229,7 +238,7 @@ def _reconcile_runtime_state() -> dict:
             state["protocol_csv"] = None
             changed = True
 
-    if (active_phase or processing) and not worker_active:
+    if (processing or worker_required_phase) and not worker_active and not in_start_grace:
         state["processing"] = False
         state["cancel_requested"] = False
         state["phase"] = "idle"
@@ -815,8 +824,8 @@ async def upload_video(file: UploadFile = File(...)):
 @app.post("/protocol/upload")
 async def upload_protocol(file: UploadFile = File(...)):
     file_name = _safe_name(file.filename, "protocol.csv")
-    if not file_name.lower().endswith(".csv"):
-        return JSONResponse({"error": "protocol file must be .csv"}, status_code=400)
+    if not file_name.lower().endswith((".csv", ".txt")):
+        return JSONResponse({"error": "protocol file must be .csv or .txt"}, status_code=400)
 
     path = (PROTOCOL_DIR / file_name).resolve()
     if path.parent != PROTOCOL_DIR.resolve():
@@ -824,11 +833,11 @@ async def upload_protocol(file: UploadFile = File(...)):
 
     data = await file.read()
     if not data:
-        return JSONResponse({"error": "empty csv"}, status_code=400)
+        return JSONResponse({"error": "empty protocol file"}, status_code=400)
 
     path.write_bytes(data)
     update_state({"protocol_csv": file_name})
-    append_event("Protocol CSV uploaded", event_type="process", details={"file": file_name})
+    append_event("Protocol file uploaded", event_type="process", details={"file": file_name})
     return {"status": "ok", "filename": file_name}
 
 
@@ -862,7 +871,7 @@ async def clear_protocol():
         return JSONResponse({"error": "cannot clear during active process"}, status_code=409)
 
     update_state({"protocol_csv": None})
-    append_event("Protocol CSV cleared from UI", event_type="event", level="warning")
+    append_event("Protocol file cleared from UI", event_type="event", level="warning")
     return {"status": "ok"}
 
 
@@ -990,11 +999,11 @@ def _processing_worker(source_name: str, settings: dict):
         state = load_state()
         protocol_name = state.get("protocol_csv")
         if not protocol_name:
-            raise ProcessingError("upload CSV protocol before processing")
+            raise ProcessingError("upload protocol file (.csv or .txt) before processing")
 
         protocol_path = (PROTOCOL_DIR / protocol_name).resolve()
         if protocol_path.parent != PROTOCOL_DIR.resolve() or not protocol_path.exists():
-            raise ProcessingError("protocol CSV not found on disk")
+            raise ProcessingError("protocol file not found on disk")
 
         update_state({
             "phase": "converting",
@@ -1124,10 +1133,10 @@ async def start_processing(payload: dict | None = None):
         return JSONResponse({"error": "selected file is not a valid video"}, status_code=400)
     protocol_name = state.get("protocol_csv")
     if not protocol_name:
-        return JSONResponse({"error": "no protocol csv uploaded"}, status_code=400)
+        return JSONResponse({"error": "no protocol file uploaded"}, status_code=400)
     protocol_path = (PROTOCOL_DIR / protocol_name).resolve()
     if protocol_path.parent != PROTOCOL_DIR.resolve() or not protocol_path.exists():
-        return JSONResponse({"error": "protocol csv not found"}, status_code=400)
+        return JSONResponse({"error": "protocol file not found"}, status_code=400)
 
     update_state({
         "phase": "converting",
@@ -1158,13 +1167,14 @@ async def start_processing(payload: dict | None = None):
 
 @app.post("/process/cancel")
 async def cancel_processing():
-    if not _worker_active():
-        return JSONResponse({"error": "no active process"}, status_code=409)
-
     state = load_state()
-    already_requested = bool(state.get("cancel_requested"))
+    if not _worker_active():
+        if bool(state.get("cancel_requested")):
+            return {"status": "accepted", "detail": "cancellation already requested"}
+        return {"status": "accepted", "detail": "no active process"}
 
-    update_state({"cancel_requested": True})
+    already_requested = bool(state.get("cancel_requested"))
+    update_state({"cancel_requested": True, "phase": "cancelling", "phase_started_at": time.time()})
     append_event("Cancellation requested", event_type="process", level="warning")
 
     with _process_lock:

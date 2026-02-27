@@ -1,9 +1,10 @@
 import csv
+import re
 from pathlib import Path
 
 
 class ProtocolMatcher:
-    """Matches OCR-recognized bib numbers with participants from a CSV protocol."""
+    """Matches OCR-recognized bib numbers with participants from a CSV/TXT protocol."""
 
     def __init__(self, file_path: Path):
         self.db: dict[str, str] = {}
@@ -35,6 +36,7 @@ class ProtocolMatcher:
 
         rows = csv.DictReader(text.splitlines(), delimiter=delim)
         if rows.fieldnames is None:
+            self._load_plain_text(text)
             return
 
         headers = {h.lower().strip(): h for h in rows.fieldnames if h}
@@ -42,6 +44,7 @@ class ProtocolMatcher:
         name_col = self._pick(headers, ["name", "фио", "атлет", "athlete", "имя"])
 
         if not num_col or not name_col:
+            self._load_plain_text(text)
             return
 
         for row in rows:
@@ -49,6 +52,29 @@ class ProtocolMatcher:
             num = raw_num.lstrip("0") or ("0" if raw_num == "0" else "")
             name = str(row.get(name_col, "")).strip()
             if num and name:
+                self.db[num] = name
+
+    def _load_plain_text(self, text: str):
+        for line in text.splitlines():
+            raw = line.strip()
+            if not raw:
+                continue
+
+            if ";" in raw:
+                left, right = raw.split(";", 1)
+                raw_num = left.strip()
+                name = right.strip()
+            else:
+                match = re.match(r"^\s*(?:#|№)?\s*(\d{1,4})[\s,\-:]+(.+?)\s*$", raw)
+                if not match:
+                    continue
+                raw_num = match.group(1).strip()
+                name = match.group(2).strip()
+
+            if not name:
+                continue
+            num = raw_num.split(".")[0].lstrip("0") or ("0" if raw_num == "0" else "")
+            if num:
                 self.db[num] = name
 
     @staticmethod

@@ -18,6 +18,12 @@ _state_changed = Condition(_lock)
 _runtime_state: dict | None = None
 _state_version = 0
 _process_boot_id = uuid.uuid4().hex
+_ALLOWED_SETTINGS = {
+    "frame_interval_sec",
+    "conf_limit",
+    "session_timeout_sec",
+    "phantom_timeout_sec",
+}
 
 _event_logger = logging.getLogger("climbtag.events")
 if not _event_logger.handlers:
@@ -71,7 +77,8 @@ def _default_state():
 
 def _persisted_state(state: dict) -> dict:
     """Persist lightweight UI/runtime hints across restarts."""
-    settings = state.get("settings") if isinstance(state.get("settings"), dict) else {}
+    raw_settings = state.get("settings") if isinstance(state.get("settings"), dict) else {}
+    settings = {k: raw_settings[k] for k in _ALLOWED_SETTINGS if k in raw_settings}
     ui = state.get("ui") if isinstance(state.get("ui"), dict) else {}
     playback = state.get("playback") if isinstance(state.get("playback"), dict) else {"source": None, "position": 0}
     timestamps = state.get("timestamps") if isinstance(state.get("timestamps"), list) else []
@@ -119,6 +126,7 @@ def load_state():
         settings = loaded.get("settings", {})
         if not isinstance(settings, dict):
             settings = {}
+        settings = {k: settings[k] for k in _ALLOWED_SETTINGS if k in settings}
         state = dict(default)
         state["settings"] = {**default["settings"], **settings}
         state["probe_runtime_id"] = _process_boot_id
