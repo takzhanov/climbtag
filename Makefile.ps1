@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("help", "venv", "install", "run", "run-bg", "stop", "restart", "status", "test", "clean", "docker-build", "docker-up", "docker-down")]
+    [ValidateSet("help", "venv", "install", "run", "run-bg", "stop", "restart", "status", "test", "benchmark-short", "benchmark-short-baseline", "benchmark-long", "clean", "docker-build", "docker-up", "docker-down")]
     [string]$Task = "help"
 )
 
@@ -33,6 +33,9 @@ function Show-Help {
     Write-Host "  restart       Stop and start uvicorn in background"
     Write-Host "  status        Show project uvicorn processes"
     Write-Host "  test          Run pytest"
+    Write-Host "  benchmark-short           Run benchmark on short test video"
+    Write-Host "  benchmark-short-baseline  Rebuild baseline for short test video"
+    Write-Host "  benchmark-long            Run benchmark on 95min test video"
     Write-Host "  clean         Clear runtime data (input/videos, outputs/converted, state.json)"
     Write-Host "  docker-build  docker compose build"
     Write-Host "  docker-up     docker compose up -d"
@@ -155,6 +158,18 @@ switch ($Task) {
     "test" {
         Ensure-Venv
         & $PythonExe -m pytest -q
+    }
+    "benchmark-short" {
+        Ensure-Venv
+        & $PythonExe "scripts/analysis_benchmark.py" --case short
+    }
+    "benchmark-short-baseline" {
+        Ensure-Venv
+        & $PythonExe "scripts/analysis_benchmark.py" --case short --write-baseline
+    }
+    "benchmark-long" {
+        Ensure-Venv
+        & $PythonExe "scripts/analysis_benchmark.py" --case long
     }
     "clean" {
         if (Test-Path "input/videos") {

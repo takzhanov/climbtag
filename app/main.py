@@ -401,7 +401,11 @@ def _download_with_ytdlp(url: str, *, start_time: int | None = None, end_time: i
 
     append_event("Downloader selected: yt-dlp", event_type="process", details={"url": url})
 
-    output_template = str(UPLOAD_DIR / "%(id)s.%(ext)s")
+    if start_time is not None and end_time is not None and end_time > start_time:
+        clip_tag = f"_clip_{start_time:06d}_{end_time:06d}"
+        output_template = str(UPLOAD_DIR / f"%(id)s{clip_tag}.%(ext)s")
+    else:
+        output_template = str(UPLOAD_DIR / "%(id)s.%(ext)s")
 
     def hook(data: dict):
         if _cancel_requested():

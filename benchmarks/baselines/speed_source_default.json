@@ -1,0 +1,38 @@
+{
+  "case": "speed-source",
+  "video": "benchmark_source_speed_check.mp4",
+  "protocol": "protocol.csv",
+  "settings": {
+    "frame_interval_sec": 3,
+    "conf_limit": 3,
+    "session_timeout_sec": 240,
+    "phantom_timeout_sec": 60
+  },
+  "runtime_sec": 85.306,
+  "timestamps": [
+    {
+      "time": 21.0,
+      "label": "#86 Мусиенко Мария"
+    },
+    {
+      "time": 72.0,
+      "label": "#15 Лужецкий Сергей"
+    },
+    {
+      "time": 141.0,
+      "label": "#157 Глотова Дарья"
+    }
+  ],
+  "results_text": "00:00 Начало трансляции\n00:21 #86 Мусиенко Мария\n01:12 #15 Лужецкий Сергей\n02:21 #157 Глотова Дарья",
+  "event_count": 6,
+  "events_tail": [
+    "Analysis started (YOLO, 3s step)",
+    "Analysis progress: 1%",
+    "Analysis progress: 30%",
+    "Analysis progress: 58%",
+    "Analysis progress: 87%",
+    "Analysis complete"
+  ],
+  "captured_at": "2026-02-28T04:31:00.513739+00:00",
+  "run_path": "C:\\Users\\meshk\\OneDrive\\Рабочий стол\\climbing_project\\benchmarks\\runs\\speed-source_20260228T043100Z.json"
+}

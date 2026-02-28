@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 import uuid
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
@@ -24,6 +25,8 @@ _ALLOWED_SETTINGS = {
     "session_timeout_sec",
     "phantom_timeout_sec",
 }
+_last_persist_monotonic = 0.0
+_persist_interval_sec = 1.0
 
 _event_logger = logging.getLogger("climbtag.events")
 if not _event_logger.handlers:
@@ -111,7 +114,7 @@ def load_state():
 
         if not STATE_FILE.exists():
             _runtime_state = dict(default)
-            save_state(_runtime_state)
+            save_state(_runtime_state, force_persist=True)
             return dict(_runtime_state)
 
         try:
@@ -156,15 +159,22 @@ def load_state():
         _runtime_state = state
 
         if _persisted_state(state) != loaded:
-            save_state(state)
+            save_state(state, force_persist=True)
 
         return dict(_runtime_state)
 
 
-def save_state(state: dict):
+def save_state(state: dict, *, force_persist: bool = False):
     with _lock:
-        global _state_version
-        STATE_FILE.write_text(json.dumps(_persisted_state(state), indent=2, ensure_ascii=False), encoding="utf-8")
+        global _state_version, _last_persist_monotonic
+        now = time.monotonic()
+        should_persist = force_persist or (now - _last_persist_monotonic) >= _persist_interval_sec
+        if should_persist:
+            STATE_FILE.write_text(
+                json.dumps(_persisted_state(state), ensure_ascii=False),
+                encoding="utf-8",
+            )
+            _last_persist_monotonic = now
         _state_version += 1
         _state_changed.notify_all()
 

@@ -32,6 +32,8 @@ outputs/
 state.json
 *.log
 models/*.pt
+benchmarks/fixtures/*.mp4
+benchmarks/runs/
 
 # Local env
 .env

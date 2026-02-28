@@ -1,0 +1,37 @@
+{
+  "case": "short",
+  "video": "benchmark_short_sourcecopy_faststart.mp4",
+  "protocol": "protocol.csv",
+  "settings": {
+    "frame_interval_sec": 3,
+    "conf_limit": 3,
+    "session_timeout_sec": 240,
+    "phantom_timeout_sec": 60
+  },
+  "runtime_sec": 136.799,
+  "timestamps": [
+    {
+      "time": 3.0,
+      "label": "#86 Мусиенко Мария"
+    },
+    {
+      "time": 39.0,
+      "label": "#15 Лужецкий Сергей"
+    },
+    {
+      "time": 81.0,
+      "label": "#157 Глотова Дарья"
+    }
+  ],
+  "results_text": "00:00 Начало трансляции\n00:03 #86 Мусиенко Мария\n00:39 #15 Лужецкий Сергей\n01:21 #157 Глотова Дарья",
+  "event_count": 5,
+  "events_tail": [
+    "Analysis started (YOLO, 3s step)",
+    "Analysis progress: 2%",
+    "Analysis progress: 46%",
+    "Analysis progress: 91%",
+    "Analysis complete"
+  ],
+  "captured_at": "2026-02-28T03:34:14.092251+00:00",
+  "run_path": "C:\\Users\\meshk\\OneDrive\\Рабочий стол\\climbing_project\\benchmarks\\runs\\short_20260228T033414Z.json"
+}
