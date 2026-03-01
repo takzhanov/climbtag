@@ -30,7 +30,7 @@ INPUT_VIDEOS_DIR = PROJECT_ROOT / "input" / "videos"
 
 CASES = {
     "short": {
-        "video": FIXTURES_DIR / "benchmark_short_sourcecopy_faststart.mp4",
+        "video": INPUT_VIDEOS_DIR / "short_video.mp4",
         "protocol": FIXTURES_DIR / "protocol.csv",
         "baseline": BASELINES_DIR / "short_default.json",
     },

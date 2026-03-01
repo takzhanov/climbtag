@@ -1,6 +1,6 @@
 {
   "case": "short",
-  "video": "benchmark_short_sourcecopy_faststart.mp4",
+  "video": "short_video.mp4",
   "protocol": "protocol.csv",
   "settings": {
     "frame_interval_sec": 3,
@@ -8,7 +8,7 @@
     "session_timeout_sec": 240,
     "phantom_timeout_sec": 60
   },
-  "runtime_sec": 136.799,
+  "runtime_sec": 60.214,
   "timestamps": [
     {
       "time": 3.0,
@@ -32,6 +32,6 @@
     "Analysis progress: 91%",
     "Analysis complete"
   ],
-  "captured_at": "2026-02-28T03:34:14.092251+00:00",
-  "run_path": "C:\\Users\\meshk\\OneDrive\\Рабочий стол\\climbing_project\\benchmarks\\runs\\short_20260228T033414Z.json"
+  "captured_at": "2026-03-01T07:58:15.280707+00:00",
+  "run_path": "C:\\Users\\meshk\\OneDrive\\Рабочий стол\\climbing_project\\benchmarks\\runs\\short_20260301T075815Z.json"
 }

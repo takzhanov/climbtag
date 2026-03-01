@@ -56,6 +56,7 @@ MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024
 ACTIVE_PHASES = {"uploading", "downloading", "converting", "processing"}
 WORKER_REQUIRED_PHASES = {"downloading", "converting", "processing"}
 RECONCILE_START_GRACE_SEC = 5.0
+PROGRESS_UPDATE_INTERVAL_SEC = 5.0
 DEFAULT_SETTINGS = {
     "frame_interval_sec": 3,
     "conf_limit": 3,
@@ -156,6 +157,29 @@ def _safe_unlink(path: Path, *, retries: int = 3, delay_sec: float = 0.1):
             time.sleep(delay_sec)
         except OSError:
             return
+
+
+def _make_progress_updater(send_progress, *, interval_sec: float = PROGRESS_UPDATE_INTERVAL_SEC):
+    last_sent_at = 0.0
+    last_progress: int | None = None
+
+    def _update(progress: int, *, force: bool = False):
+        nonlocal last_sent_at, last_progress
+        normalized = max(0, min(100, int(progress)))
+        now = time.monotonic()
+        should_send = force or normalized in {0, 100}
+        if not should_send:
+            if last_progress is None or normalized < last_progress:
+                should_send = True
+            elif normalized != last_progress and (now - last_sent_at) >= interval_sec:
+                should_send = True
+        if not should_send:
+            return
+        send_progress(normalized)
+        last_progress = normalized
+        last_sent_at = now
+
+    return _update
 
 
 def _normalize_phase(raw: str | None) -> str:
@@ -274,6 +298,9 @@ def _processing_worker_process(
             payload["details"] = details
         queue.put(payload)
 
+    convert_progress = _make_progress_updater(lambda p: send_patch({"phase": "converting", "progress": p}))
+    analysis_progress = _make_progress_updater(lambda p: send_patch({"progress": p}))
+
     try:
         source_path = Path(source_path_str)
         protocol_path = Path(protocol_path_str)
@@ -283,7 +310,7 @@ def _processing_worker_process(
             source_path,
             CONVERTED_DIR,
             check_cancel=cancel_event.is_set,
-            progress_cb=lambda p: send_patch({"phase": "converting", "progress": p}),
+            progress_cb=convert_progress,
             event_cb=lambda msg: send_event(msg),
         )
 
@@ -308,7 +335,7 @@ def _processing_worker_process(
             settings=settings,
             partial_cb=lambda patch: send_patch(patch),
             check_cancel=cancel_event.is_set,
-            progress_cb=lambda p: send_patch({"progress": p}),
+            progress_cb=analysis_progress,
             event_cb=lambda msg: send_event(msg),
         )
 
@@ -407,6 +434,8 @@ def _download_with_ytdlp(url: str, *, start_time: int | None = None, end_time: i
     else:
         output_template = str(UPLOAD_DIR / "%(id)s.%(ext)s")
 
+    progress_update = _make_progress_updater(lambda p: update_state({"progress": p}))
+
     def hook(data: dict):
         if _cancel_requested():
             raise CancelledError("download cancelled")
@@ -417,7 +446,7 @@ def _download_with_ytdlp(url: str, *, start_time: int | None = None, end_time: i
         total = data.get("total_bytes") or data.get("total_bytes_estimate") or 0
         downloaded = data.get("downloaded_bytes") or 0
         if total:
-            update_state({"progress": int((downloaded * 100) / total)})
+            progress_update(int((downloaded * 100) / total))
 
     opts = {
         "format": "best[ext=mp4][height<=720]/best[ext=mp4]/best",
@@ -467,6 +496,7 @@ def _download_direct(url: str) -> Path:
         raise RuntimeError("invalid download path")
 
     append_event("Downloader selected: direct HTTP", event_type="process", details={"file": local_name})
+    progress_update = _make_progress_updater(lambda p: update_state({"progress": p}))
 
     with requests.get(url, stream=True, timeout=30) as response:
         response.raise_for_status()
@@ -487,7 +517,7 @@ def _download_direct(url: str) -> Path:
                 out.write(chunk)
                 downloaded += len(chunk)
                 if total > 0:
-                    update_state({"progress": int((downloaded * 100) / total)})
+                    progress_update(int((downloaded * 100) / total))
 
     if not file_path.exists() or file_path.stat().st_size == 0:
         raise RuntimeError("downloaded file is empty")
@@ -1022,11 +1052,14 @@ def _processing_worker(source_name: str, settings: dict):
         })
         append_event("Pipeline started", event_type="process", details={"video": source_name})
 
+        convert_progress = _make_progress_updater(lambda p: update_state({"progress": p}))
+        analysis_progress = _make_progress_updater(lambda p: update_state({"progress": p}))
+
         analysis_path, was_converted = ensure_playable_input(
             source_path,
             CONVERTED_DIR,
             check_cancel=_cancel_requested,
-            progress_cb=lambda p: update_state({"progress": p}),
+            progress_cb=convert_progress,
             event_cb=lambda msg: append_event(msg, event_type="process"),
         )
 
@@ -1043,7 +1076,7 @@ def _processing_worker(source_name: str, settings: dict):
 
         update_state({"phase": "processing", "progress": 0, "phase_started_at": time.time()})
         def _progress_cb(p: int):
-            update_state({"progress": p})
+            analysis_progress(p)
 
         def _partial_cb(patch: dict):
             update_state(patch)

@@ -28,6 +28,7 @@ dist/
 
 # Runtime app data
 input/
+uploads/
 outputs/
 state.json
 *.log
