@@ -194,7 +194,7 @@ def _normalize_phase(raw: str | None) -> str:
 
 def _reset_state(*, clear_events: bool = False):
     state = load_state()
-    state.update({
+    patch = {
         "video": None,
         "converted": None,
         "protocol_csv": None,
@@ -210,10 +210,11 @@ def _reset_state(*, clear_events: bool = False):
         "bboxes": [],
         "timestamps": [],
         "settings": dict(DEFAULT_SETTINGS),
-    })
+    }
     if clear_events:
-        state["events"] = []
-    save_state(state)
+        patch["events"] = []
+    state.update(patch)
+    update_state(patch)
 
 
 def _reconcile_runtime_state() -> dict:
@@ -771,7 +772,8 @@ async def reset_state(payload: dict | None = None):
 
     clear_events = bool((payload or {}).get("clear_events"))
     _reset_state(clear_events=clear_events)
-    append_event("State reset requested from UI", event_type="event", level="warning")
+    if not clear_events:
+        append_event("State reset requested from UI", event_type="event", level="warning")
     return {"status": "ok"}
 
 

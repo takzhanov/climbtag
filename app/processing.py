@@ -234,7 +234,7 @@ def _format_time(seconds: float) -> str:
 
 def _build_results_text(results: list[dict]) -> str:
     lines = ["00:00 Начало трансляции"]
-    lines.extend(f"{item['time_text']} #{item['num']} {item['name']}" for item in results)
+    lines.extend(f"{item['time_text']} №{item['num']} {item['name']}" for item in results)
     return "\n".join(lines)
 
 
@@ -357,7 +357,7 @@ def run_protocol_analysis(
                 if candidates[num]["count"] >= conf_limit:
                     results.append({
                         "time": candidates[num]["first_sec"],
-                        "label": f"#{num} {name}",
+                        "label": f"№{num} {name}",
                         "num": num,
                         "name": name,
                         "time_text": candidates[num]["first_time"],

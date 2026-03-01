@@ -942,7 +942,7 @@ cancelBtn.addEventListener("click", async () => {
 
 resetStateBtn.addEventListener("click", async () => {
     try {
-        await callJson("/state/reset", { clear_events: false });
+        await callJson("/state/reset", { clear_events: true });
         fileInput.value = "";
         csvInput.value = "";
         urlInput.value = "";

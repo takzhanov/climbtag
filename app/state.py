@@ -65,7 +65,7 @@ def _default_state():
             "phantom_timeout_sec": 60,
         },
         "ui": {
-            "sidebar_hidden": False,
+            "sidebar_hidden": True,
             "right_panel_collapsed": True,
             "sidebar_pinned": True,
             "right_panel_pinned": False,
