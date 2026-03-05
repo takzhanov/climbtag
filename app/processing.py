@@ -275,7 +275,7 @@ def run_protocol_analysis(
     settings = settings or {}
     frame_interval = max(1, int(settings.get("frame_interval_sec", 3)))
     conf_limit = max(1, int(settings.get("conf_limit", 3)))
-    session_timeout_sec = max(0, int(settings.get("session_timeout_sec", 240)))
+    session_timeout_sec = max(0, int(settings.get("session_timeout_sec", 360)))
     phantom_timeout_sec = max(0, int(settings.get("phantom_timeout_sec", 60)))
 
     total_steps = max(1, int(duration / frame_interval))

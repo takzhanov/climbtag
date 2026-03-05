@@ -60,7 +60,7 @@ PROGRESS_UPDATE_INTERVAL_SEC = 5.0
 DEFAULT_SETTINGS = {
     "frame_interval_sec": 3,
     "conf_limit": 3,
-    "session_timeout_sec": 240,
+    "session_timeout_sec": 360,
     "phantom_timeout_sec": 60,
 }
 LOG_DIR = BASE_DIR / "logs"

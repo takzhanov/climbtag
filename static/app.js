@@ -242,7 +242,7 @@ function readSettingsFromUI() {
     return {
         frame_interval_sec: clampInt(frameIntervalInput.value, 3, 1, 30),
         conf_limit: clampInt(confLimitInput.value, 3, 1, 10),
-        session_timeout_sec: clampInt(sessionTimeoutInput.value, 240, 10, 3600),
+        session_timeout_sec: clampInt(sessionTimeoutInput.value, 360, 10, 3600),
         phantom_timeout_sec: clampInt(phantomTimeoutInput.value, 60, 5, 3600)
     };
 }
@@ -258,7 +258,7 @@ function applySettingsFromState(state) {
 
     setValue(frameIntervalInput, settings.frame_interval_sec ?? 3);
     setValue(confLimitInput, settings.conf_limit ?? 3);
-    setValue(sessionTimeoutInput, settings.session_timeout_sec ?? 240);
+    setValue(sessionTimeoutInput, settings.session_timeout_sec ?? 360);
     setValue(phantomTimeoutInput, settings.phantom_timeout_sec ?? 60);
 }
 
